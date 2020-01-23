@@ -1,0 +1,66 @@
+#!/bin/bash
+#
+# chkconfig: 35 90 12
+# description: API Nagios Receive POST  Messages 
+#
+
+# Get function from functions library
+. /etc/init.d/functions
+api_nagios_proc=`pgrep -a python | awk  '{if ($3 =="/MONITORIZACION/uti/api/apiNagiosIaasOper.py") print $1'}`
+# Start the service API Nagios Service
+
+start() {
+       # initlog -c "echo -n Starting API Nagios Service: "
+	echo  "Starting API Nagios Service: "
+	cd /MONITORIZACION/uti/api/ ;
+	nohup /usr/bin/python /MONITORIZACION/uti/api/apiNagiosIaasOper.py 9090 &>> /dev/null &
+       
+        ### Create the lock file ###
+	touch /var/lock/subsys/api_nagios
+        success "API Nagios Service startup with process: $api_nagios_proc"
+	api_nagios_proc=`pgrep -a python | awk  '{if ($3 =="/MONITORIZACION/uti/api/apiNagiosIaasOper.py") print $1'}`
+        echo "$api_nagios_proc" > /var/run/api_nagios.pid
+	echo
+}
+
+# Restart the service FOO
+stop() {
+        initlog -c "echo -n Stopping API Nagios Service: "
+        kill -9  $api_nagios_proc 
+        ### Now, delete the lock file ###
+        rm -f /var/lock/subsys/api_nagios
+        echo
+}
+
+
+status()
+	if [ ! -z $api_nagios_proc ]; then 
+		echo "API Nagios Service is Running with Process: $api_nagios_proc"
+		exit 0 
+	else  
+		echo "API Nagios Service is ShutDown"
+		exit 2
+	fi
+
+### main logic ###
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        status FOO
+        ;;
+  restart|reload|condrestart)
+        stop
+        start
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart|status}"
+        exit 1
+esac
+
+exit 0
+

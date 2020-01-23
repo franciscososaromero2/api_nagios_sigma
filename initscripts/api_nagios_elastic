@@ -1,0 +1,69 @@
+#!/bin/bash 
+#
+# chkconfig: 35 91 11
+# description: API Nagios Insert Elastic 
+#
+
+# Get function from functions library
+#. /etc/init.d/functions
+api_nagios_detect_proc=`ps -efa | grep python | grep ./nagios_elastic_insert.py | awk  '{if ($9 =="./nagios_elastic_insert.py") print $2'}`
+# Start the service API Nagios Service Detect
+
+start() {
+	if [ ! -z $api_nagios_detect_proc ]; then
+                echo "API Nagios Detect Service is Running with Process: $api_nagios_detect_proc"
+                exit 0
+        else
+        echo "Starting API Nagios Detect Service: "
+       	cd /MONITORIZACION/uti/nagios_apicreate/ ; nohup ./nagios_elastic_insert.py > nohup.out &
+        ### Create the lock file ###
+	touch  /var/lock/subsys/api_nagios_elastic
+        echo "API Nagios Elastic Service  startup with process: $api_nagios_detect_proc"
+	api_nagios_detect_proc=`ps -efa | grep python | grep ./nagios_elastic_insert.py | awk  '{if ($9 =="./nagios_elastic_insert.py") print $2'}`
+        echo $api_nagios_detect_proc >  /var/run/nagios_api_elastic.pid
+	echo
+	fi
+}
+
+# Restart the service FOO
+stop() {
+        echo  "Stopping API Nagios Elastic Service:" 
+        kill -9  $api_nagios_detect_proc
+        ### Now, delete the lock file ###
+        rm -f /var/lock/subsys/api_nagios_elastic
+        echo
+}
+
+
+status()
+	if [ ! -z $api_nagios_detect_proc ]; then 
+		echo "API Nagios Elastic Service is Running with Process: $api_nagios_detect_proc"
+		exit 0 
+	else  
+		echo "API Nagios Service Elastic is ShutDown"
+		exit 2
+	fi
+
+### main logic ###
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        status
+        ;;
+  restart|reload|condrestart)
+        stop
+        start
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart|reload|status}"
+        exit 1
+esac
+
+exit 0
+
+
